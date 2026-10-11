@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Medical Records Access</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f3f6fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 32px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.10);
+        }
+
+        .icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 8px;
+            color: #172033;
+            font-size: 26px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #667085;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .patient-box {
+            background: #f5f8ff;
+            border-left: 4px solid #2563eb;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 22px;
+        }
+
+        .patient-box strong {
+            color: #172033;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #344054;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            margin-bottom: 18px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .info {
+            margin-top: 22px;
+            padding: 14px;
+            background: #fff8e7;
+            border-radius: 8px;
+            color: #6b4f00;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error {
+            background: #ffecec;
+            color: #b42318;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .back {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <div class="icon">🔐</div>
+
+        <h1>Medical Records Access</h1>
+
+        <p class="subtitle">
+            Detailed medical records are protected.
+            Please authenticate to continue.
+        </p>
+
+        <div class="patient-box">
+            <strong>Patient:</strong>
+            {{ patient.name }}
+
+            {% if patient.patient_id %}
+            <br>
+            <strong>Patient ID:</strong>
+            {{ patient.patient_id }}
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="error">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+        <form method="POST">
+
+            <label for="identifier">
+                Patient ID or Doctor ID
+            </label>
+
+            <input
+                type="text"
+                id="identifier"
+                name="identifier"
+                placeholder="Example: P1001 or D1001"
+                required
+            >
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+            >
+
+            <button type="submit">
+                🔓 Access Medical Records
+            </button>
+
+        </form>
+
+        <div class="info">
+            <strong>Emergency access:</strong><br>
+            The patient can authenticate using their Patient ID.
+            An authenticated doctor can also access the patient's
+            records during an emergency.
+        </div>
+
+        <a
+            class="back"
+            href="{{ url_for('emergency', token=patient.qr_token) }}"
+        >
+            ← Back to Emergency Information
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

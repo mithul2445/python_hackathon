@@ -1,0 +1,316 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        header {
+            background: #1e3a8a;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 { margin: 0; }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .patient-card, .record, .upload-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.08);
+            overflow-wrap: anywhere;
+        }
+
+        .access {
+            color: #166534;
+            background: #dcfce7;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .records {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .record h2, .upload-card h2 { margin-top: 0; }
+
+        .icon { font-size: 32px; }
+
+        .record-item {
+            border-top: 1px solid #ddd;
+            padding: 15px 0;
+        }
+
+        .empty { color: #777; }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 13px 0 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+        }
+
+        textarea { min-height: 85px; resize: vertical; }
+
+        .upload-button, .download-button, .logout, .back {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 8px;
+            border: none;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .upload-button {
+            background: #1d4ed8;
+            color: white;
+            margin-top: 16px;
+        }
+
+        .download-button {
+            background: #dcfce7;
+            color: #166534;
+            margin-top: 8px;
+        }
+
+        .back { background: #64748b; color: white; }
+
+        .logout { background: #dc2626; color: white; }
+
+        .message {
+            background: #fff7ed;
+            color: #9a3412;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .file-name {
+            color: #475569;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .actions { margin-top: 25px; }
+
+        @media (max-width: 700px) {
+            .records { grid-template-columns: 1fr; }
+            .container { padding: 14px; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>📋 Medical Records</h1>
+    <p>Secure medical information</p>
+</header>
+
+<main class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="message">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <section class="patient-card">
+        <h2>{{ patient.name }}</h2>
+        <p>
+            Patient ID:
+            <strong>{{ patient.patient_id }}</strong>
+        </p>
+
+        <span class="access">
+            {% if access_type == "doctor" %}
+                👨‍⚕️ Doctor Emergency Access
+            {% else %}
+                👤 Patient Access
+            {% endif %}
+        </span>
+    </section>
+
+    <!-- UPLOAD FORM -->
+    {% if access_type == "patient" %}
+    <section class="upload-card">
+        <h2>📤 Upload a Medical Document</h2>
+        <p>Allowed formats: PDF, JPG, JPEG and PNG. Maximum size: 10 MB.</p>
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+            action="{{ url_for('upload_medical_record', token=patient.qr_token) }}"
+        >
+            <label for="record_type">Document category *</label>
+            <select id="record_type" name="record_type" required>
+                <option value="blood_test">Blood Test</option>
+                <option value="ct_scan">CT Scan</option>
+                <option value="mri_scan">MRI Scan</option>
+                <option value="prescription">Prescription</option>
+                <option value="certificate">Medical Certificate</option>
+                <option value="other">Other Report</option>
+            </select>
+
+            <label for="title">Document title *</label>
+            <input
+                id="title"
+                name="title"
+                type="text"
+                maxlength="200"
+                placeholder="e.g. Complete Blood Count"
+                required
+            >
+
+            <label for="record_date">Report date</label>
+            <input id="record_date" name="record_date" type="date">
+
+            <label for="description">Description (optional)</label>
+            <textarea
+                id="description"
+                name="description"
+                placeholder="Add a short description"
+            ></textarea>
+
+            <label for="file">Choose document *</label>
+            <input
+                id="file"
+                name="file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+            >
+
+            <button class="upload-button" type="submit">
+                Upload Document
+            </button>
+        </form>
+    </section>
+    {% endif %}
+
+    <!-- RECORD LIST -->
+    <div class="records">
+        {% set categories = [
+            ('blood_test', '🩸', 'Blood Tests'),
+            ('ct_scan', '🫁', 'CT Scans'),
+            ('mri_scan', '🧠', 'MRI Scans'),
+            ('prescription', '💊', 'Prescriptions'),
+            ('certificate', '📄', 'Medical Certificates'),
+            ('other', '📑', 'Other Reports')
+        ] %}
+
+        {% for category, emoji, heading in categories %}
+        <section class="record">
+            <div class="icon">{{ emoji }}</div>
+            <h2>{{ heading }}</h2>
+
+            {% set matching_records = records
+                |selectattr("record_type", "equalto", category)
+                |list
+            %}
+
+            {% if matching_records %}
+                {% for record in matching_records %}
+                <div class="record-item">
+                    <strong>{{ record.title }}</strong>
+
+                    {% if record.record_date %}
+                    <p>Date: {{ record.record_date }}</p>
+                    {% endif %}
+
+                    {% if record.description %}
+                    <p>{{ record.description }}</p>
+                    {% endif %}
+
+                    {% if record.original_filename %}
+                        <p class="file-name">
+                            📎 {{ record.original_filename }}
+                            {% if record.file_size %}
+                                ({{ (record.file_size / 1024)|round(1) }} KB)
+                            {% endif %}
+                        </p>
+
+                        <a
+                            class="download-button"
+                            href="{{ url_for(
+                                'download_medical_record',
+                                token=patient.qr_token,
+                                record_id=record.id
+                            ) }}"
+                        >⬇ Download Document</a>
+                    {% else %}
+                        <p class="empty">No document attached to this record.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty">No {{ heading|lower }} uploaded.</p>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+
+    <div class="actions">
+        <a
+            class="back"
+            href="{{ url_for('emergency', token=patient.qr_token) }}"
+        >← Emergency Information</a>
+
+        <form
+            method="POST"
+            action="{{ url_for('medical_records_logout', token=patient.qr_token) }}"
+            style="display:inline;"
+        >
+            <button class="logout" type="submit">🔒 Logout</button>
+        </form>
+    </div>
+</main>
+
+<script>
+    const fileInput = document.getElementById("file");
+
+    if (fileInput) {
+        fileInput.addEventListener("change", function () {
+            const file = this.files[0];
+
+            if (file && file.size > 10 * 1024 * 1024) {
+                alert("Please select a file smaller than 10 MB.");
+                this.value = "";
+            }
+        });
+    }
+</script>
+</body>
+</html>
+```

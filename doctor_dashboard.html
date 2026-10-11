@@ -1,0 +1,427 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Doctor Dashboard - Emergency Medical QR</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        header {
+            background: #b91c1c;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+        }
+
+        .logout {
+            background: white;
+            color: #b91c1c;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 14px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #991b1b;
+        }
+
+        .request {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
+            background: #fff;
+        }
+
+        .request strong {
+            font-size: 18px;
+        }
+
+        .patient-info {
+            margin: 8px 0 15px;
+            color: #555;
+        }
+
+        button {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .accept {
+            background: #16a34a;
+            color: white;
+        }
+
+        .reject {
+            background: #dc2626;
+            color: white;
+        }
+
+        .view {
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            padding: 9px 15px;
+            border-radius: 7px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .empty {
+            color: #777;
+            padding: 10px 0;
+        }
+
+        .flash {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .change {
+            border-top: 1px solid #ddd;
+            padding: 15px 0;
+        }
+
+        .change:first-child {
+            border-top: none;
+        }
+
+        .change-actions {
+            margin-top: 10px;
+        }
+
+        .approve {
+            background: #16a34a;
+            color: white;
+        }
+
+        .deny {
+            background: #dc2626;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>Doctor Dashboard</h1>
+        <p>Welcome, Dr. {{ doctor.name }}</p>
+        <p>Doctor ID: <strong>{{ doctor.doctor_id }}</strong></p>
+    </div>
+
+    <form method="POST" action="{{ url_for('logout') }}">
+        <button type="submit" class="logout">
+            Logout
+        </button>
+    </form>
+</header>
+
+<div class="container">
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- PATIENT LINK REQUESTS -->
+
+    <div class="card">
+
+        <h2>🔗 Patient Link Requests</h2>
+
+        {% if pending_links %}
+
+            {% for link in pending_links %}
+
+                <div class="request">
+
+                    <strong>
+                        {{ link.patient.name }}
+                    </strong>
+
+                    <div class="patient-info">
+
+                        Patient ID:
+                        <strong>{{ link.patient.patient_id }}</strong>
+
+                        <br>
+
+                        {% if link.patient.age %}
+                            Age: {{ link.patient.age }}
+                        {% endif %}
+
+                    </div>
+
+                    <p>
+                        This patient wants to link their medical
+                        profile with you.
+                    </p>
+
+                    <!-- ACCEPT -->
+
+                    <form
+                        method="POST"
+                        action="{{ url_for(
+                            'doctor_link_action',
+                            link_id=link.id,
+                            action='accept'
+                        ) }}"
+                        style="display:inline;"
+                    >
+
+                        <button
+                            type="submit"
+                            class="accept"
+                        >
+                            ✓ Accept
+                        </button>
+
+                    </form>
+
+                    <!-- REJECT -->
+
+                    <form
+                        method="POST"
+                        action="{{ url_for(
+                            'doctor_link_action',
+                            link_id=link.id,
+                            action='reject'
+                        ) }}"
+                        style="display:inline;"
+                    >
+
+                        <button
+                            type="submit"
+                            class="reject"
+                        >
+                            ✕ Reject
+                        </button>
+
+                    </form>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="empty">
+                No pending patient link requests.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- LINKED PATIENTS -->
+
+    <div class="card">
+
+        <h2>👨‍⚕️ My Patients</h2>
+
+        {% if links %}
+
+            {% for link in links %}
+
+                <div class="request">
+
+                    <strong>
+                        {{ link.patient.name }}
+                    </strong>
+
+                    <div class="patient-info">
+
+                        Patient ID:
+                        {{ link.patient.patient_id }}
+
+                        <br>
+
+                        {% if link.patient.blood_group %}
+                            Blood Group:
+                            {{ link.patient.blood_group }}
+                        {% endif %}
+
+                    </div>
+
+                    <a
+                        href="{{ url_for(
+                            'doctor_patient',
+                            patient_pk=link.patient.id
+                        ) }}"
+                        class="view"
+                    >
+                        View Patient Profile
+                    </a>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="empty">
+                No linked patients yet.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- PATIENT CHANGE REQUESTS -->
+
+    <div class="card">
+
+        <h2>📝 Patient Medical Change Requests</h2>
+
+        {% if pending %}
+
+            {% for change in pending %}
+
+                <div class="change">
+
+                    <strong>
+                        {{ change.patient.name }}
+                    </strong>
+
+                    <p>
+                        Patient ID:
+                        {{ change.patient.patient_id }}
+                    </p>
+
+                    <p>
+                        <strong>Field:</strong>
+                        {{ change.field_name }}
+                    </p>
+
+                    <p>
+                        <strong>Current value:</strong>
+                        {{ change.old_value or "Not provided" }}
+                    </p>
+
+                    <p>
+                        <strong>Requested value:</strong>
+                        {{ change.new_value or "Not provided" }}
+                    </p>
+
+                    {% if change.reason %}
+                        <p>
+                            <strong>Reason:</strong>
+                            {{ change.reason }}
+                        </p>
+                    {% endif %}
+
+                    <div class="change-actions">
+
+                        <form
+                            method="POST"
+                            action="{{ url_for(
+                                'approve_change',
+                                request_id=change.id
+                            ) }}"
+                            style="display:inline;"
+                        >
+
+                            <button
+                                type="submit"
+                                class="approve"
+                            >
+                                ✓ Approve
+                            </button>
+
+                        </form>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for(
+                                'reject_change',
+                                request_id=change.id
+                            ) }}"
+                            style="display:inline;"
+                        >
+
+                            <button
+                                type="submit"
+                                class="deny"
+                            >
+                                ✕ Reject
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="empty">
+                No pending medical change requests.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
+```
