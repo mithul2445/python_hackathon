@@ -1,11 +1,12 @@
+
 import os
 import secrets
 from datetime import datetime
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from werkzeug.utils import secure_filename
 
+from werkzeug.utils import secure_filename
 import qrcode
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -26,10 +27,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 if not app.config["SECRET_KEY"]:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 
-database_url = os.environ.get(
-    "DATABASE_URL",
-    "sqlite:///medical_qr.db"
-)
+database_url = os.environ.get("DATABASE_URL", "sqlite:///medical_qr.db")
 
 if database_url.startswith("postgres://"):
     database_url = database_url.replace(
@@ -38,8 +36,6 @@ if database_url.startswith("postgres://"):
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Maximum request size: 10 MB
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 db = SQLAlchemy(app)
@@ -68,8 +64,9 @@ EDITABLE_FIELDS = [
 
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.String(32), unique=True,
-                           nullable=False, index=True)
+    patient_id = db.Column(
+        db.String(32), unique=True, nullable=False, index=True
+    )
     name = db.Column(db.String(120), nullable=False)
     age = db.Column(db.Integer, nullable=True)
     weight = db.Column(db.String(30), nullable=True)
@@ -81,15 +78,17 @@ class Patient(db.Model):
     emergency_phone = db.Column(db.String(40), nullable=True)
     private_notes = db.Column(db.Text, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    qr_token = db.Column(db.String(64), unique=True,
-                         nullable=False, index=True)
+    qr_token = db.Column(
+        db.String(64), unique=True, nullable=False, index=True
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    doctor_id = db.Column(db.String(32), unique=True,
-                          nullable=False, index=True)
+    doctor_id = db.Column(
+        db.String(32), unique=True, nullable=False, index=True
+    )
     name = db.Column(db.String(120), nullable=False)
     hospital = db.Column(db.String(160), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -97,10 +96,12 @@ class Doctor(db.Model):
 
 class DoctorPatient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    doctor_id = db.Column(db.Integer,
-                          db.ForeignKey("doctor.id"), nullable=False)
-    patient_id = db.Column(db.Integer,
-                           db.ForeignKey("patient.id"), nullable=False)
+    doctor_id = db.Column(
+        db.Integer, db.ForeignKey("doctor.id"), nullable=False
+    )
+    patient_id = db.Column(
+        db.Integer, db.ForeignKey("patient.id"), nullable=False
+    )
     status = db.Column(db.String(20), default="active", nullable=False)
 
     doctor = db.relationship("Doctor")
@@ -109,8 +110,9 @@ class DoctorPatient(db.Model):
 
 class ChangeRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer,
-                            db.ForeignKey("patient.id"), nullable=False)
+    patient_id = db.Column(
+        db.Integer, db.ForeignKey("patient.id"), nullable=False
+    )
     requested_by_type = db.Column(db.String(20), nullable=False)
     requested_by_id = db.Column(db.Integer, nullable=False)
     field_name = db.Column(db.String(80), nullable=False)
@@ -126,8 +128,9 @@ class ChangeRequest(db.Model):
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer,
-                           db.ForeignKey("patient.id"), nullable=False)
+    patient_id = db.Column(
+        db.Integer, db.ForeignKey("patient.id"), nullable=False
+    )
     actor_type = db.Column(db.String(20), nullable=False)
     actor_id = db.Column(db.Integer, nullable=True)
     action = db.Column(db.String(120), nullable=False)
@@ -139,14 +142,14 @@ class AuditLog(db.Model):
 
 class MedicalRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer,
-                           db.ForeignKey("patient.id"), nullable=False)
+    patient_id = db.Column(
+        db.Integer, db.ForeignKey("patient.id"), nullable=False
+    )
     record_type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     record_date = db.Column(db.String(30), nullable=True)
     description = db.Column(db.Text, nullable=True)
 
-    # Uploaded document fields
     original_filename = db.Column(db.String(255), nullable=True)
     mime_type = db.Column(db.String(100), nullable=True)
     file_size = db.Column(db.Integer, nullable=True)
@@ -157,8 +160,6 @@ class MedicalRecord(db.Model):
 
 # ============================================================
 # DATABASE UPGRADE
-# Adds file columns to an existing medical_record table.
-# Does not delete existing patients, doctors, or records.
 # ============================================================
 
 def ensure_medical_record_columns():
@@ -249,9 +250,7 @@ def generate_patient_id():
     for patient in patients:
         if patient.patient_id.startswith("P"):
             try:
-                highest = max(
-                    highest, int(patient.patient_id[1:])
-                )
+                highest = max(highest, int(patient.patient_id[1:]))
             except ValueError:
                 pass
 
@@ -265,9 +264,7 @@ def generate_doctor_id():
     for doctor in doctors:
         if doctor.doctor_id.startswith("D"):
             try:
-                highest = max(
-                    highest, int(doctor.doctor_id[1:])
-                )
+                highest = max(highest, int(doctor.doctor_id[1:]))
             except ValueError:
                 pass
 
@@ -275,7 +272,9 @@ def generate_doctor_id():
 
 
 def records_patient_for_token(token):
-    patient = Patient.query.filter_by(qr_token=token).first_or_404()
+    patient = Patient.query.filter_by(
+        qr_token=token
+    ).first_or_404()
 
     if session.get("records_patient_id") != patient.id:
         abort(403)
@@ -313,10 +312,14 @@ def index():
 
 @app.route("/emergency/<token>")
 def emergency(token):
-    patient = Patient.query.filter_by(qr_token=token).first_or_404()
+    patient = Patient.query.filter_by(
+        qr_token=token
+    ).first_or_404()
 
-    add_audit(patient, "public", None,
-              "Emergency profile viewed", "QR profile")
+    add_audit(
+        patient, "public", None,
+        "Emergency profile viewed", "QR profile"
+    )
     db.session.commit()
 
     return render_template("emergency.html", patient=patient)
@@ -324,7 +327,9 @@ def emergency(token):
 
 @app.route("/qr/<token>.png")
 def qr_png(token):
-    patient = Patient.query.filter_by(qr_token=token).first_or_404()
+    patient = Patient.query.filter_by(
+        qr_token=token
+    ).first_or_404()
 
     target = url_for(
         "emergency", token=patient.qr_token, _external=True
@@ -549,7 +554,6 @@ def doctor_dashboard():
 @login_required("patient")
 def patient_request_doctor():
     patient = current_patient()
-
     doctor_id = request.form.get("doctor_id", "").strip()
     doctor = Doctor.query.filter_by(doctor_id=doctor_id).first()
 
@@ -794,7 +798,7 @@ def reject_change(request_id):
 
 
 # ============================================================
-# DOCTOR VIEW OF LINKED PATIENT
+# DOCTOR VIEW OF LINKED PATIENT AND MEDICAL RECORDS
 # ============================================================
 
 @app.route("/doctor/patient/<int:patient_pk>")
@@ -814,13 +818,89 @@ def doctor_patient(patient_pk):
         patient_id=patient.id
     ).order_by(AuditLog.created_at.desc()).limit(30).all()
 
+    # Get the patient's uploaded medical records.
+    records = MedicalRecord.query.filter_by(
+        patient_id=patient.id
+    ).order_by(MedicalRecord.id.desc()).all()
+
     return render_template(
         "doctor_patient.html",
         patient=patient,
         changes=changes,
-        logs=logs
+        logs=logs,
+        records=records
     )
 
+
+@app.route(
+    "/doctor/patient/<int:patient_pk>/record/<int:record_id>/view"
+)
+@login_required("doctor")
+def doctor_view_record(patient_pk, record_id):
+    doctor = current_doctor()
+    patient = db.session.get(Patient, patient_pk)
+
+    if not patient or not is_linked(doctor, patient):
+        abort(403)
+
+    record = db.session.get(MedicalRecord, record_id)
+
+    if not record or record.patient_id != patient.id:
+        abort(404)
+
+    if not record.file_data or not record.original_filename:
+        abort(404)
+
+    add_audit(
+        patient, "doctor", doctor.id,
+        "Medical document viewed", record.original_filename
+    )
+    db.session.commit()
+
+    return send_file(
+        BytesIO(record.file_data),
+        mimetype=record.mime_type or "application/octet-stream",
+        as_attachment=False,
+        download_name=record.original_filename
+    )
+
+
+@app.route(
+    "/doctor/patient/<int:patient_pk>/record/<int:record_id>/download"
+)
+@login_required("doctor")
+def doctor_download_record(patient_pk, record_id):
+    doctor = current_doctor()
+    patient = db.session.get(Patient, patient_pk)
+
+    if not patient or not is_linked(doctor, patient):
+        abort(403)
+
+    record = db.session.get(MedicalRecord, record_id)
+
+    if not record or record.patient_id != patient.id:
+        abort(404)
+
+    if not record.file_data or not record.original_filename:
+        abort(404)
+
+    add_audit(
+        patient, "doctor", doctor.id,
+        "Medical document downloaded", record.original_filename
+    )
+    db.session.commit()
+
+    return send_file(
+        BytesIO(record.file_data),
+        mimetype=record.mime_type or "application/octet-stream",
+        as_attachment=True,
+        download_name=record.original_filename
+    )
+
+
+# ============================================================
+# PATIENT QR PAGE
+# ============================================================
 
 @app.route("/patient/qr")
 @login_required("patient")
@@ -837,7 +917,9 @@ def patient_qr():
 
 @app.route("/medical-records/<token>", methods=["GET", "POST"])
 def medical_records_login(token):
-    patient = Patient.query.filter_by(qr_token=token).first_or_404()
+    patient = Patient.query.filter_by(
+        qr_token=token
+    ).first_or_404()
 
     if request.method == "POST":
         identifier = request.form.get("identifier", "").strip()
@@ -878,8 +960,7 @@ def medical_records_login(token):
         if doctor and check_password_hash(
             doctor.password_hash, password
         ):
-            # This preserves the original emergency-access behavior:
-            # any authenticated doctor may access this token's records.
+            # Existing emergency-access behavior is retained here.
             session["records_patient_id"] = patient.id
             session["records_access"] = "doctor"
             session["records_doctor_id"] = doctor.id
@@ -920,13 +1001,11 @@ def medical_records(token):
 
 # ============================================================
 # UPLOAD MEDICAL RECORD
-# Form fields: record_type, title, record_date, description, file
 # ============================================================
 
 @app.post("/medical-records/<token>/upload")
 def upload_medical_record(token):
     patient = records_patient_for_token(token)
-
     uploaded_file = request.files.get("file")
 
     if not uploaded_file or not uploaded_file.filename:
@@ -963,7 +1042,6 @@ def upload_medical_record(token):
     record_date = request.form.get("record_date", "").strip()
     description = request.form.get("description", "").strip()
 
-    # Do not trust the browser's supplied MIME type alone.
     extension = safe_filename.rsplit(".", 1)[1].lower()
     mime_types = {
         "pdf": "application/pdf",
@@ -973,17 +1051,25 @@ def upload_medical_record(token):
     }
     mime_type = mime_types[extension]
 
-    # Basic file-signature checks to reject obvious extension mismatches.
     if extension == "pdf" and not file_data.startswith(b"%PDF-"):
-        flash("The selected file does not appear to be a valid PDF.", "error")
+        flash(
+            "The selected file does not appear to be a valid PDF.",
+            "error"
+        )
         return redirect(url_for("medical_records", token=token))
 
     if extension in ("jpg", "jpeg") and not file_data.startswith(b"\xff\xd8\xff"):
-        flash("The selected file does not appear to be a valid JPEG image.", "error")
+        flash(
+            "The selected file does not appear to be a valid JPEG image.",
+            "error"
+        )
         return redirect(url_for("medical_records", token=token))
 
     if extension == "png" and not file_data.startswith(b"\x89PNG\r\n\x1a\n"):
-        flash("The selected file does not appear to be a valid PNG image.", "error")
+        flash(
+            "The selected file does not appear to be a valid PNG image.",
+            "error"
+        )
         return redirect(url_for("medical_records", token=token))
 
     record = MedicalRecord(
@@ -1008,8 +1094,7 @@ def upload_medical_record(token):
 
     add_audit(
         patient, actor_type, actor_id,
-        "Medical document uploaded",
-        safe_filename
+        "Medical document uploaded", safe_filename
     )
 
     db.session.commit()
@@ -1025,7 +1110,6 @@ def upload_medical_record(token):
 @app.route("/medical-records/<token>/download/<int:record_id>")
 def download_medical_record(token, record_id):
     patient = records_patient_for_token(token)
-
     record = db.session.get(MedicalRecord, record_id)
 
     if not record or record.patient_id != patient.id:
@@ -1044,8 +1128,7 @@ def download_medical_record(token, record_id):
 
     add_audit(
         patient, actor_type, actor_id,
-        "Medical document downloaded",
-        record.original_filename
+        "Medical document downloaded", record.original_filename
     )
     db.session.commit()
 
@@ -1063,7 +1146,9 @@ def download_medical_record(token, record_id):
 
 @app.post("/medical-records/<token>/logout")
 def medical_records_logout(token):
-    patient = Patient.query.filter_by(qr_token=token).first_or_404()
+    patient = Patient.query.filter_by(
+        qr_token=token
+    ).first_or_404()
 
     if session.get("records_patient_id") == patient.id:
         session.pop("records_patient_id", None)
