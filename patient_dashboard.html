@@ -1,0 +1,516 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Emergency Medical QR</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .navbar {
+            background: #172554;
+            color: white;
+            padding: 16px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 { margin: 0; font-size: 20px; }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .welcome { margin-bottom: 25px; }
+
+        .welcome h1 {
+            margin: 0 0 5px;
+            color: #172554;
+        }
+
+        .welcome p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            min-width: 0;
+        }
+
+        .card.full { grid-column: 1 / -1; }
+
+        .card h2 {
+            margin-top: 0;
+            color: #1e3a8a;
+            font-size: 20px;
+        }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 0;
+        }
+
+        .profile-row:last-child { border-bottom: none; }
+
+        .label {
+            font-weight: bold;
+            color: #475569;
+        }
+
+        .value {
+            color: #1e293b;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .button {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            padding: 11px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .button:hover { background: #1d4ed8; }
+
+        .button.green { background: #059669; }
+        .button.green:hover { background: #047857; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        .flash {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .flash.success {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .flash.error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .doctor-item {
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            margin-bottom: 10px;
+        }
+
+        .doctor-name {
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .request-item {
+            padding: 13px;
+            border-left: 4px solid #f59e0b;
+            background: #fffbeb;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            overflow-wrap: anywhere;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        .form-row input { margin-bottom: 0; }
+
+        .records-card {
+            border: 2px solid #d1fae5;
+        }
+
+        .records-note {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 750px) {
+            .grid { grid-template-columns: 1fr; }
+
+            .card.full { grid-column: auto; }
+
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .form-row { grid-template-columns: 1fr; }
+
+            .form-row input { margin-bottom: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <h2>Emergency Medical QR</h2>
+
+    <div class="navbar-right">
+        <span>{{ session_name }}</span>
+
+        <form method="POST" action="{{ url_for('logout') }}">
+            <button class="logout" type="submit">Logout</button>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="welcome">
+        <h1>Welcome, {{ patient.name }}</h1>
+        <p>Patient ID: <strong>{{ patient.patient_id }}</strong></p>
+    </div>
+
+    <div class="grid">
+
+        <!-- PATIENT PROFILE -->
+        <div class="card">
+            <h2>🧑‍⚕️ Medical Profile</h2>
+
+            <div class="profile-row">
+                <span class="label">Name</span>
+                <span class="value">{{ patient.name }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Age</span>
+                <span class="value">{{ patient.age or "Not provided" }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Weight</span>
+                <span class="value">{{ patient.weight or "Not provided" }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Blood Group</span>
+                <span class="value">{{ patient.blood_group or "Not provided" }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Allergies</span>
+                <span class="value">{{ patient.allergies or "None provided" }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Conditions</span>
+                <span class="value">{{ patient.conditions or "None provided" }}</span>
+            </div>
+
+            <div class="profile-row">
+                <span class="label">Medications</span>
+                <span class="value">{{ patient.medications or "None provided" }}</span>
+            </div>
+        </div>
+
+        <!-- EMERGENCY QR -->
+        <div class="card">
+            <h2>📱 Emergency QR</h2>
+
+            <p>
+                Your QR code can be scanned to access your
+                emergency medical profile.
+            </p>
+
+            <a class="button green" href="{{ url_for('patient_qr') }}">
+                View My QR Code
+            </a>
+        </div>
+
+        <!-- MEDICAL RECORDS: NEW CARD -->
+        <div class="card records-card">
+            <h2>📁 My Medical Records</h2>
+
+            <p class="records-note">
+                Upload and view your blood tests, CT scans, MRI scans,
+                prescriptions, medical certificates, and other reports.
+            </p>
+
+            <a
+                class="button green"
+                href="{{ url_for('medical_records_login', token=patient.qr_token) }}"
+            >
+                View / Upload Medical Records
+            </a>
+        </div>
+
+        <!-- CONNECT WITH A DOCTOR -->
+        <div class="card">
+            <h2>🩺 Connect With a Doctor</h2>
+
+            <p>
+                Enter the Doctor ID provided by your doctor
+                to send a connection request.
+            </p>
+
+            <form method="POST" action="{{ url_for('patient_request_doctor') }}">
+                <label for="doctor_id">Doctor ID</label>
+
+                <div class="form-row">
+                    <input
+                        type="text"
+                        id="doctor_id"
+                        name="doctor_id"
+                        placeholder="Example: D1002"
+                        required
+                    >
+
+                    <button type="submit" class="button">
+                        Send Request
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- LINKED DOCTORS -->
+        <div class="card">
+            <h2>👨‍⚕️ My Doctors</h2>
+
+            {% if links %}
+                {% for link in links %}
+                    <div class="doctor-item">
+                        <div class="doctor-name">{{ link.doctor.name }}</div>
+
+                        <div>Doctor ID: {{ link.doctor.doctor_id }}</div>
+
+                        <div>
+                            {{ link.doctor.hospital or "Hospital not provided" }}
+                        </div>
+
+                        <span class="status active">✓ Connected</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No doctors connected yet.</p>
+            {% endif %}
+
+            {% if pending_doctor_links %}
+                <h3>Pending Requests</h3>
+
+                {% for link in pending_doctor_links %}
+                    <div class="doctor-item">
+                        <div class="doctor-name">{{ link.doctor.name }}</div>
+
+                        <div>Doctor ID: {{ link.doctor.doctor_id }}</div>
+
+                        <span class="status pending">
+                            ⏳ Waiting for doctor approval
+                        </span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- REQUEST MEDICAL INFORMATION CHANGE -->
+        <div class="card full">
+            <h2>✏️ Request Medical Information Change</h2>
+
+            <p>Changes require approval from an authorized doctor.</p>
+
+            <form method="POST" action="{{ url_for('patient_request_change') }}">
+                <label for="field_name">Information to Change</label>
+
+                <select name="field_name" id="field_name" required>
+                    <option value="">Select a field</option>
+                    <option value="name">Name</option>
+                    <option value="age">Age</option>
+                    <option value="weight">Weight</option>
+                    <option value="blood_group">Blood Group</option>
+                    <option value="allergies">Allergies</option>
+                    <option value="conditions">Medical Conditions</option>
+                    <option value="medications">Medications</option>
+                    <option value="emergency_contact">Emergency Contact</option>
+                    <option value="emergency_phone">Emergency Phone</option>
+                    <option value="private_notes">Private Notes</option>
+                </select>
+
+                <label for="new_value">New Value</label>
+
+                <textarea
+                    name="new_value"
+                    id="new_value"
+                    placeholder="Enter the new information..."
+                    required
+                ></textarea>
+
+                <label for="reason">Reason</label>
+
+                <textarea
+                    name="reason"
+                    id="reason"
+                    placeholder="Why does this information need to be changed?"
+                ></textarea>
+
+                <button type="submit" class="button">
+                    Submit Change Request
+                </button>
+            </form>
+        </div>
+
+        <!-- DOCTOR CHANGE REQUESTS -->
+        {% if incoming %}
+        <div class="card">
+            <h2>🔔 Doctor Change Requests</h2>
+
+            {% for change in incoming %}
+                <div class="request-item">
+                    <strong>{{ change.field_name }}</strong>
+
+                    <p>New value: {{ change.new_value }}</p>
+
+                    {% if change.reason %}
+                        <p>Reason: {{ change.reason }}</p>
+                    {% endif %}
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('approve_change', request_id=change.id) }}"
+                        style="display:inline;"
+                    >
+                        <button class="button green" type="submit">
+                            Approve
+                        </button>
+                    </form>
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('reject_change', request_id=change.id) }}"
+                        style="display:inline;"
+                    >
+                        <button
+                            class="button"
+                            type="submit"
+                            style="background:#dc2626;"
+                        >
+                            Reject
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- MY CHANGE REQUESTS -->
+        <div class="card">
+            <h2>📋 My Change Requests</h2>
+
+            {% if outgoing %}
+                {% for change in outgoing %}
+                    <div class="request-item">
+                        <strong>{{ change.field_name }}</strong>
+
+                        <div>New value: {{ change.new_value }}</div>
+
+                        <div>
+                            Status: <strong>{{ change.status }}</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No change requests yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
+```

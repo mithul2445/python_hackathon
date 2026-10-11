@@ -1,0 +1,396 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Emergency Medical Information</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .header {
+            background: #c62828;
+            color: white;
+            text-align: center;
+            padding: 28px 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+            font-size: 15px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 25px auto;
+            padding: 0 18px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .patient-name {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .emergency-warning {
+            background: #fff3f3;
+            border-left: 5px solid #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        .label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .value {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .blood {
+            color: #c62828;
+            font-size: 22px;
+        }
+
+        .records-card {
+            text-align: center;
+        }
+
+        .records-card h2 {
+            margin-top: 0;
+        }
+
+        .records-card p {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .records-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #1565c0;
+            color: white;
+            text-decoration: none;
+            border-radius: 9px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .records-button:hover {
+            background: #0d47a1;
+        }
+
+        .footer {
+            text-align: center;
+            color: #777;
+            font-size: 13px;
+            padding: 10px 0 30px;
+        }
+
+        @media (max-width: 600px) {
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h1>🚨 Emergency Medical Information</h1>
+
+        <p>
+            Emergency information, when it matters most.
+        </p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- WARNING -->
+
+        <div class="card">
+
+            <div class="emergency-warning">
+
+                <strong>⚠️ Emergency Profile</strong>
+
+                <br><br>
+
+                This information is provided to assist medical
+                personnel during an emergency.
+
+            </div>
+
+
+            <!-- PATIENT NAME -->
+
+            <div class="patient-name">
+
+                {{ patient.name }}
+
+            </div>
+
+
+            <!-- BASIC INFORMATION -->
+
+            <div class="info-grid">
+
+
+                <!-- AGE -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Age
+                    </div>
+
+                    <div class="value">
+
+                        {% if patient.age %}
+                            {{ patient.age }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- BLOOD GROUP -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Blood Group
+                    </div>
+
+                    <div class="value blood">
+
+                        {% if patient.blood_group %}
+                            {{ patient.blood_group }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- ALLERGIES -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Allergies
+                    </div>
+
+                    <div class="value">
+
+                        {% if patient.allergies %}
+                            {{ patient.allergies }}
+                        {% else %}
+                            None provided
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONDITIONS -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Medical Conditions
+                    </div>
+
+                    <div class="value">
+
+                        {% if patient.conditions %}
+                            {{ patient.conditions }}
+                        {% else %}
+                            None provided
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- MEDICATIONS -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Current Medications
+                    </div>
+
+                    <div class="value">
+
+                        {% if patient.medications %}
+                            {{ patient.medications }}
+                        {% else %}
+                            None provided
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMERGENCY CONTACT -->
+
+                <div class="info-box">
+
+                    <div class="label">
+                        Emergency Contact
+                    </div>
+
+                    <div class="value">
+
+                        {% if patient.emergency_contact %}
+                            {{ patient.emergency_contact }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+
+                    </div>
+
+                    {% if patient.emergency_phone %}
+
+                        <br>
+
+                        <strong>
+                            {{ patient.emergency_phone }}
+                        </strong>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- MEDICAL RECORDS -->
+
+        <div class="card records-card">
+
+            <h2>
+                🔐 Detailed Medical Records
+            </h2>
+
+            <p>
+
+                Detailed medical documents such as blood tests,
+                CT scans, MRI scans, prescriptions and medical
+                certificates are protected.
+
+            </p>
+
+            <p>
+
+                Authentication is required to access these records.
+
+            </p>
+
+
+            <a
+                class="records-button"
+                href="{{ url_for('medical_records_login', token=patient.qr_token) }}"
+            >
+
+                View Medical Records
+
+            </a>
+
+        </div>
+
+
+        <div class="footer">
+
+            Emergency Medical QR
+
+            <br>
+
+            Secure medical information when it matters most.
+
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>
+```
