@@ -1,1 +1,182 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Patient Profile</title><style>body{font-family:Arial;background:#f4f7fb;margin:0;color:#172033}.wrap{max-width:1000px;margin:30px auto;padding:20px}.card{background:white;padding:22px;border-radius:12px;margin-bottom:18px;box-shadow:0 3px 15px #0001}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field{background:#f6f8fa;padding:13px;border-radius:8px}.btn{background:#1769aa;color:white;padding:10px 15px;border:0;border-radius:7px}input,select,textarea{width:100%;padding:9px;margin:6px 0 12px;border:1px solid #ccd4df;border-radius:6px;box-sizing:border-box}</style></head><body><div class="wrap"><a href="{{ url_for('doctor_dashboard') }}">← Back to dashboard</a><div class="card"><h1>{{ patient.name }}</h1><div class="grid"><div class="field"><b>Patient ID</b><br>{{ patient.patient_id }}</div><div class="field"><b>Age</b><br>{{ patient.age or '-' }}</div><div class="field"><b>Weight</b><br>{{ patient.weight or '-' }}</div><div class="field"><b>Blood Group</b><br>{{ patient.blood_group or '-' }}</div><div class="field"><b>Allergies</b><br>{{ patient.allergies or '-' }}</div><div class="field"><b>Conditions</b><br>{{ patient.conditions or '-' }}</div><div class="field"><b>Medications</b><br>{{ patient.medications or '-' }}</div><div class="field"><b>Emergency Contact</b><br>{{ patient.emergency_contact or '-' }}</div></div></div><div class="card"><h2>Request Patient Data Change</h2><form method="post" action="{{ url_for('doctor_request_change') }}"><input type="hidden" name="patient_pk" value="{{ patient.id }}"><select name="field_name" required><option value="">Select field</option>{% for f in ['name','age','weight','blood_group','allergies','conditions','medications','emergency_contact','emergency_phone','private_notes'] %}<option value="{{ f }}">{{ f.replace('_',' ')|title }}</option>{% endfor %}</select><input name="new_value" placeholder="New value" required><textarea name="reason" placeholder="Reason"></textarea><button class="btn" type="submit">Submit for Patient Approval</button></form></div><div class="card"><h2>Change History</h2>{% for x in changes %}<p><b>{{ x.field_name }}</b>: {{ x.old_value }} → {{ x.new_value }} — {{ x.status }}</p>{% else %}<p>No changes.</p>{% endfor %}</div><div class="card"><h2>Audit Log</h2>{% for x in logs %}<p>{{ x.created_at }} — <b>{{ x.action }}</b> — {{ x.details }}</p>{% else %}<p>No audit entries.</p>{% endfor %}</div></div></body></html>
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Patient Profile</title>
+
+<style>
+* { box-sizing: border-box; }
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fb;
+    margin: 0;
+    color: #172033;
+}
+.wrap {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+}
+.card {
+    background: white;
+    padding: 22px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    box-shadow: 0 3px 15px #0001;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 12px;
+}
+.field {
+    background: #f6f8fa;
+    padding: 13px;
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}
+.btn {
+    display: inline-block;
+    background: #1769aa;
+    color: white;
+    padding: 10px 15px;
+    border: 0;
+    border-radius: 7px;
+    text-decoration: none;
+    cursor: pointer;
+    margin: 4px 4px 4px 0;
+}
+.btn.secondary { background: #46566b; }
+input, select, textarea {
+    width: 100%;
+    padding: 9px;
+    margin: 6px 0 12px;
+    border: 1px solid #ccd4df;
+    border-radius: 6px;
+}
+.record {
+    border: 1px solid #e0e6ef;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0;
+    overflow-wrap: anywhere;
+}
+.muted { color: #637083; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<a href="{{ url_for('doctor_dashboard') }}">← Back to dashboard</a>
+
+<div class="card">
+    <h1>{{ patient.name }}</h1>
+
+    <div class="grid">
+        <div class="field"><b>Patient ID</b><br>{{ patient.patient_id }}</div>
+        <div class="field"><b>Age</b><br>{{ patient.age or '-' }}</div>
+        <div class="field"><b>Weight</b><br>{{ patient.weight or '-' }}</div>
+        <div class="field"><b>Blood Group</b><br>{{ patient.blood_group or '-' }}</div>
+        <div class="field"><b>Allergies</b><br>{{ patient.allergies or '-' }}</div>
+        <div class="field"><b>Conditions</b><br>{{ patient.conditions or '-' }}</div>
+        <div class="field"><b>Medications</b><br>{{ patient.medications or '-' }}</div>
+        <div class="field"><b>Emergency Contact</b><br>{{ patient.emergency_contact or '-' }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Medical Records</h2>
+    <p class="muted">
+        Uploaded blood tests, CT scans, prescriptions and other medical documents.
+    </p>
+
+    {% for record in records %}
+        <div class="record">
+            <h3>{{ record.title }}</h3>
+
+            <p>
+                <b>Type:</b>
+                {{ record.record_type.replace('_', ' ')|title }}
+            </p>
+
+            {% if record.record_date %}
+                <p><b>Record date:</b> {{ record.record_date }}</p>
+            {% endif %}
+
+            {% if record.description %}
+                <p><b>Description:</b> {{ record.description }}</p>
+            {% endif %}
+
+            {% if record.original_filename and record.file_data %}
+                <a class="btn"
+                   href="{{ url_for('doctor_view_record', patient_pk=patient.id, record_id=record.id) }}"
+                   target="_blank" rel="noopener">
+                    View Record
+                </a>
+
+                <a class="btn secondary"
+                   href="{{ url_for('doctor_download_record', patient_pk=patient.id, record_id=record.id) }}">
+                    Download
+                </a>
+            {% else %}
+                <p class="muted">No uploaded file is attached to this record.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>No medical records have been uploaded for this patient yet.</p>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h2>Request Patient Data Change</h2>
+
+    <form method="post" action="{{ url_for('doctor_request_change') }}">
+        <input type="hidden" name="patient_pk" value="{{ patient.id }}">
+
+        <select name="field_name" required>
+            <option value="">Select field</option>
+            {% for f in ['name','age','weight','blood_group','allergies','conditions','medications','emergency_contact','emergency_phone','private_notes'] %}
+                <option value="{{ f }}">{{ f.replace('_',' ')|title }}</option>
+            {% endfor %}
+        </select>
+
+        <input name="new_value" placeholder="New value" required>
+        <textarea name="reason" placeholder="Reason"></textarea>
+
+        <button class="btn" type="submit">
+            Submit for Patient Approval
+        </button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Change History</h2>
+    {% for x in changes %}
+        <p>
+            <b>{{ x.field_name }}</b>:
+            {{ x.old_value }} → {{ x.new_value }} — {{ x.status }}
+        </p>
+    {% else %}
+        <p>No changes.</p>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h2>Audit Log</h2>
+    {% for x in logs %}
+        <p>
+            {{ x.created_at }} —
+            <b>{{ x.action }}</b> — {{ x.details }}
+        </p>
+    {% else %}
+        <p>No audit entries.</p>
+    {% endfor %}
+</div>
+
+</div>
+</body>
+</html>
+```
